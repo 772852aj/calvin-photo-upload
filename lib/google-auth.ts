@@ -2,13 +2,33 @@ import { JWT } from "google-auth-library";
 
 let cachedClient: JWT | null = null;
 
+function normalizeKey(raw: string): string {
+  let k = raw.trim();
+  // Strip a single layer of surrounding quotes (single or double) if pasted that way
+  if (
+    (k.startsWith('"') && k.endsWith('"')) ||
+    (k.startsWith("'") && k.endsWith("'"))
+  ) {
+    k = k.slice(1, -1);
+  }
+  // Convert literal \n sequences to real newlines (handles env vars that escape them)
+  k = k.replace(/\\n/g, "\n");
+  // Some hosts collapse all whitespace — restore newlines around PEM markers if missing
+  if (!k.includes("\n")) {
+    k = k
+      .replace(/-----BEGIN ([A-Z ]+)-----\s*/g, "-----BEGIN $1-----\n")
+      .replace(/\s*-----END ([A-Z ]+)-----/g, "\n-----END $1-----");
+  }
+  return k;
+}
+
 function loadCreds(): { clientEmail: string; privateKey: string } {
   const splitEmail = process.env.GOOGLE_CLIENT_EMAIL;
   const splitKey = process.env.GOOGLE_PRIVATE_KEY;
   if (splitEmail && splitKey) {
     return {
-      clientEmail: splitEmail,
-      privateKey: splitKey.replace(/\\n/g, "\n"),
+      clientEmail: splitEmail.trim(),
+      privateKey: normalizeKey(splitKey),
     };
   }
 
@@ -32,7 +52,7 @@ function loadCreds(): { clientEmail: string; privateKey: string } {
   }
   return {
     clientEmail: parsed.client_email,
-    privateKey: parsed.private_key.replace(/\\n/g, "\n"),
+    privateKey: normalizeKey(parsed.private_key),
   };
 }
 
