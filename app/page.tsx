@@ -173,9 +173,24 @@ export default function HomePage() {
     setPageError(null);
   };
 
+  const removeFile = (id: string) => {
+    setFiles((prev) => {
+      const target = prev.find((f) => f.id === id);
+      if (target?.thumb) URL.revokeObjectURL(target.thumb);
+      return prev.filter((f) => f.id !== id);
+    });
+    setPageError(null);
+  };
+
   const doneCount = files.filter((f) => f.status === "done").length;
   const errorCount = files.filter((f) => f.status === "error").length;
   const totalBytes = files.reduce((s, f) => s + f.file.size, 0);
+  const uploadedBytes = files.reduce(
+    (s, f) => s + f.file.size * (f.status === "done" ? 1 : f.progress),
+    0,
+  );
+  const overallProgress = totalBytes > 0 ? uploadedBytes / totalBytes : 0;
+  const showOverallBar = isUploading || (doneCount > 0 && doneCount < files.length);
 
   if (allDone) {
     return (
@@ -252,8 +267,28 @@ export default function HomePage() {
 
           {files.length > 0 && (
             <>
+              {showOverallBar && (
+                <div className="overall-progress">
+                  <div className="overall-progress-header">
+                    <span>
+                      {isUploading ? "Uploading" : "Uploaded"} {doneCount} of {files.length}
+                    </span>
+                    <span>{Math.round(overallProgress * 100)}%</span>
+                  </div>
+                  <div className="progress-bar overall-bar">
+                    <div
+                      className="progress-fill"
+                      style={{ width: `${Math.round(overallProgress * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
               <ul className="file-list">
-                {files.map((f) => (
+                {files.map((f) => {
+                  const canRemove =
+                    !isUploading && (f.status === "pending" || f.status === "error");
+                  return (
                   <li key={f.id} className="file-item">
                     <div className="file-item-row">
                       {f.thumb ? (
@@ -269,11 +304,21 @@ export default function HomePage() {
                         <div className="file-size">{formatSize(f.file.size)}</div>
                       </div>
                       <div className={`file-status ${f.status}`}>
-                        {f.status === "pending" && "waiting"}
+                        {f.status === "pending" && "ready to upload"}
                         {f.status === "uploading" && `${Math.round(f.progress * 100)}%`}
                         {f.status === "done" && "✓ done"}
                         {f.status === "error" && "✗ failed"}
                       </div>
+                      {canRemove && (
+                        <button
+                          type="button"
+                          className="remove-btn"
+                          aria-label={`Remove ${f.file.name}`}
+                          onClick={() => removeFile(f.id)}
+                        >
+                          ×
+                        </button>
+                      )}
                     </div>
                     {(f.status === "uploading" || f.status === "done" || f.status === "error") && (
                       <div className="progress-bar">
@@ -287,7 +332,8 @@ export default function HomePage() {
                       <div style={{ fontSize: 12, color: "#dc2626" }}>{f.error}</div>
                     )}
                   </li>
-                ))}
+                  );
+                })}
               </ul>
 
               <div className="summary">
