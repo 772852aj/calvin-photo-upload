@@ -29,7 +29,7 @@ Open http://localhost:3000.
 2. Import the repo at https://vercel.com/new
 3. Add two environment variables in the Vercel project settings:
    - `GOOGLE_SERVICE_ACCOUNT_KEY` — paste the entire JSON file contents (Vercel accepts multi-line)
-   - `DRIVE_FOLDER_ID` — `0AN5jy1VwO4tIUk9PVA`
+   - `DRIVE_FOLDER_ID` — the ID of your Shared Drive (from the URL after `/folders/`)
 4. Deploy
 
 ## Banner image
@@ -42,11 +42,7 @@ Once deployed, point a QR generator at the Vercel URL (e.g. `https://calvin-uplo
 
 ## Where the files go
 
-Shared Drive: `Calvin's Birthday Photos`
-Drive ID: `0AN5jy1VwO4tIUk9PVA`
-Service account: `calvin-uploads@calvins-first.iam.gserviceaccount.com`
-
-Files are owned by the Shared Drive itself, so they count against your Workspace storage pool and survive even if the service account is later deleted.
+Uploaded files land in a Google Workspace Shared Drive that you've shared with the service account (as Content Manager). Files are owned by the Shared Drive itself, so they count against your Workspace storage pool and survive even if the service account is later deleted.
 
 ## Security notes
 
