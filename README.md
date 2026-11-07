@@ -49,3 +49,42 @@ Uploaded files land in a Google Workspace Shared Drive that you've shared with t
 - The service account key file is sensitive — never commit it. `.gitignore` blocks `service-account*.json` and any `.env*.local`.
 - The `drive.file` scope is used, so the service account can only see files it created — not your other Drive contents.
 - No guest authentication. If you share the URL publicly, anyone can upload. Take the page down after the event by removing the Vercel deployment.
+
+---
+
+# Kitchen Inventory (`/kitchen`)
+
+A second app in this repo: photograph your deep freezer, pantry and fridge, and an AI agent turns each photo into reviewed inventory records.
+
+## What it does
+
+| Tab | Purpose |
+|---|---|
+| **Scan** | Pick the location (freezer / pantry / fridge), take or choose photos. Each photo is shrunk in the browser and sent to `/api/kitchen/analyze`. |
+| **Review** | Every item the agent found waits here. You check the name, brand, count, package size, printed date, ingredients and allergens before anything enters inventory. Each field shows where it came from: *from label*, *researched online*, *estimated*, or *unknown*. Low-confidence items carry a note. If the product is already in inventory, you can merge the count instead of creating a duplicate. |
+| **Inventory** | Search and filter by location, category, or "allergy-safe only". Tap − when you use something. Each item shows a use-by date (printed date, or a USDA-style storage guideline when there isn't one), plus the photos it came from. |
+| **Meals** | Breakfast / lunch / dinner / dessert / snack ideas built from what you have. Avoids the household's allergens and favors items that expire soon. Missing ingredients go to the shopping list in one tap. |
+| **Shopping** | Things you used up (or that dropped below the low-stock number you set) are added automatically. When you photograph the new groceries and approve them, they come off the list. |
+| **Upkeep** | Monthly audit tracker, freezer and pantry maintenance tips, JSON/CSV export and import, activity log. |
+
+## How the photo agent works
+
+`app/api/kitchen/analyze/route.ts` sends the image to Claude (`claude-opus-5-5`) with two tools:
+
+1. **Web search**: looks up the official ingredient list and allergen statement for branded products whose label isn't legible in the photo.
+2. **`record_items`**: a strict JSON schema the agent must fill in for each product: name, brand, category, quantity, package size, net weight in ounces, ingredients, contains / may-contain allergens (FDA Big 9), printed date and its type, the source of each field, a confidence score, reviewer notes, and research URLs.
+
+## Setup
+
+Add to `.env.local` (and to Vercel project settings):
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+KITCHEN_PASSCODE=optional-shared-secret
+```
+
+If `KITCHEN_PASSCODE` is set, each phone enters it once in **Upkeep → Household passcode**. Without one, anyone who finds the URL can spend your API credits.
+
+## Where data lives
+
+All inventory data is in the browser's `localStorage` on each device. Use **Upkeep → Export backup** to move data to another phone. Photos are kept only as small thumbnails, so you can see where each record came from. Full-size images are never stored.
